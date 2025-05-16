@@ -1,0 +1,20 @@
+{
+  "name": "@squaredle/util",
+  "version": "0.0.1",
+  "description": "",
+  "homepage": "https://github.com/squaredle/modules#readme",
+  "bugs": {
+    "url": "https://github.com/squaredle/modules/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/squaredle/modules.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Squaredle LLC",
+  "type": "module",
+  "exports": {
+    "./cli": "./cli.js",
+    "./password-prompt": "./password-prompt.js"
+  }
+}
