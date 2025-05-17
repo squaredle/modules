@@ -1,6 +1,7 @@
 # Files and directories in any location
 .DS_Store
 .env*
+.eslintcache
 .idea/
 node_modules/
 vendor/
