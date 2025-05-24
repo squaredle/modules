@@ -24,7 +24,7 @@
   "type": "module",
   "exports": "./cert-builder.js",
   "bin": {
-    "local-ssl-certs": "./index.js"
+    "local-ssl-certs": "index.js"
   },
   "scripts": {
     "clean": "rm -rf dev-certs"
