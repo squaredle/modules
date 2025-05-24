@@ -1,2 +1,2 @@
 "*": "prettier --write --log-level warn --ignore-unknown --cache"
-"*.js": "eslint --cache --fix"
+"*.js": "eslint --max-warnings 0 --cache --fix"

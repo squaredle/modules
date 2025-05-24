@@ -1,0 +1,36 @@
+{
+  "name": "@squaredle/local-ssl-certs",
+  "version": "1.0.0",
+  "description": "Generate self-signed root CA certificates and sign SSL certs for local development, permanently bypassing annoying HTTPS warnings.",
+  "keywords": [
+    "ssl",
+    "certificates",
+    "https",
+    "self-signed",
+    "ca",
+    "openssl",
+    "x509"
+  ],
+  "homepage": "https://github.com/squaredle/modules#readme",
+  "bugs": {
+    "url": "https://github.com/squaredle/modules/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/squaredle/modules.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Squaredle LLC",
+  "type": "module",
+  "exports": "./cert-builder.js",
+  "bin": {
+    "local-ssl-certs": "./index.js"
+  },
+  "scripts": {
+    "clean": "rm -rf dev-certs"
+  },
+  "dependencies": {
+    "@squaredle/util": "^1.0.0",
+    "commander": "^14.0.0"
+  }
+}

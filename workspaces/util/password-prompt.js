@@ -50,7 +50,12 @@ async function promptOnce(prompt) {
   });
 }
 
-export async function passwordPrompt(prompt, confirm = null) {
+/**
+ * @param {string} prompt
+ * @param {?string=} retypePrompt
+ * @returns {Promise<unknown>}
+ */
+export async function passwordPrompt(prompt, retypePrompt = null) {
   if (!process.stdin.isTTY) {
     return new Promise((resolve, reject) => {
       process.stdin.once("data", (data) => {
@@ -64,10 +69,11 @@ export async function passwordPrompt(prompt, confirm = null) {
 
   readline.emitKeypressEvents(process.stdin);
   const password = await promptOnce(prompt);
-  if (confirm) {
-    const confirmPassword = await promptOnce(confirm);
-    if (password !== confirmPassword) {
-      throw new Error("Passwords do not match");
+  if (retypePrompt) {
+    const retypedPassword = await promptOnce(retypePrompt);
+    if (password !== retypedPassword) {
+      console.error("Passwords do not match");
+      return passwordPrompt(prompt, retypePrompt);
     }
   }
   return password;

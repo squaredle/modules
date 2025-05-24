@@ -1,0 +1,9 @@
+# Files and directories in any location
+.DS_Store
+.env*
+.idea/
+node_modules/
+vendor/
+
+# Files and directories starting from this location
+dev-certs/

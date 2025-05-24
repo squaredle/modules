@@ -1,6 +1,6 @@
 {
   "name": "@squaredle/util",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "homepage": "https://github.com/squaredle/modules#readme",
   "bugs": {
@@ -15,6 +15,7 @@
   "type": "module",
   "exports": {
     "./cli": "./cli.js",
-    "./password-prompt": "./password-prompt.js"
+    "./password-prompt": "./password-prompt.js",
+    "./process-util": "./process-util.js"
   }
 }

@@ -35,10 +35,15 @@ export function prompt(question) {
 
 /**
  * @param question
+ * @param {boolean=} assumeTrue Make true the default if no answer is given
  * @returns {Promise<boolean>}
  */
-export function confirm(question) {
-  return prompt(question + " (y/N) ").then((answer) => {
+export function confirm(question, assumeTrue) {
+  const msg = `${question} (${assumeTrue ? "Y/n" : "y/N"}) `;
+  return prompt(msg).then((answer) => {
+    if (answer === "") {
+      return assumeTrue === true;
+    }
     return ["y", "yes"].includes(answer.trim().toLowerCase());
   });
 }
