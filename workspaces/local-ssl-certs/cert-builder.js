@@ -424,15 +424,21 @@ export class CertBuilder {
         // Intermediate CA cert not found. Create one now.
         // First, check for the root CA.
         if (!this.#rootCAInfo && !(await this.#loadRootCA())) {
-          if (
-            !(await cli.confirm("Root CA not found. Create one now?", true))
-          ) {
+          console.log(
+            "Root CA not found at",
+            join(
+              this.certDir,
+              `${this.sharedConfig.root_distinguished_name.commonName}.crt`,
+            ),
+          );
+          if (!(await cli.confirm("Create one now?", true))) {
             console.warn("Aborting.");
             process.exit(1);
           }
           await this.createRootCA();
         }
 
+        console.log(`Intermediate CA not found at ${intermediatePath}.crt`);
         if (
           !(await cli.confirm(
             "Intermediate CA not found. Create one now?",
