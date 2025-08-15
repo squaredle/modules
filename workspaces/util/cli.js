@@ -92,3 +92,15 @@ if (!process.stdout.isTTY) {
     ScreenCodes[code] = "";
   }
 }
+
+/**
+ * Gets an environment variable value, first checking the key prefixed with the
+ *   given environment.
+ * @param {string} key
+ * @param {string} env
+ * @return {string|undefined}
+ */
+export function getEnvVar(key, env) {
+  const value = process.env[`${env.toUpperCase()}_${key}`] ?? undefined;
+  return value ?? process.env[key] ?? undefined;
+}
