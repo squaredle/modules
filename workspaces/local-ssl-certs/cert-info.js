@@ -27,6 +27,7 @@ export class CertInfo {
         this.certPath,
         "-text",
         "-ext",
+        "subjectAltName",
         "-trustout",
         "-certopt",
         "no_header,no_version,no_serial,no_validity,no_pubkey,no_sigdump",
