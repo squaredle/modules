@@ -279,8 +279,8 @@ export class CertBuilder {
       for (const path of [certInfo.keyPath, certInfo.certPath]) {
         if (fs.existsSync(path)) {
           if (!(await cli.confirm(`Overwrite existing file ${path}?`))) {
-            console.warn("Aborting.");
-            process.exit(1);
+            console.warn("Skipping cert issuance for existing cert:", name);
+            continue;
           }
         }
       }
