@@ -4,9 +4,9 @@ import child_process from "node:child_process";
  * @param {string} command
  * @param {Array<string>=} args
  * @param {Object=} options Spawn options. If options.stdio has stdout set to
- *   "pipe", the promise will resolve with the stdout of the command.
+ *   "pipe", the promise will resolve with the stdout and stderr of the command.
  * @returns {!{
- *   promise: Promise<string|null>,
+ *   promise: Promise<{stdout: string, stderr: string}|null>,
  *   childProcess: ChildProcessWithoutNullStreams,
  * }}
  */
@@ -17,24 +17,36 @@ export function spawnAsync(command, args = [], options = {}) {
       options.stdio = "inherit";
     }
     childProcess = child_process.spawn(command, args, options);
-    let stdout = childProcess.stdout ? "" : null;
+    let stdout = "";
+    let stderr = "";
     childProcess.stdout?.on("data", (data) => {
       stdout += data.toString();
+    });
+    childProcess.stderr?.on("data", (data) => {
+      stderr += data.toString();
     });
     childProcess.on("error", (err) => {
       reject(err);
     });
     childProcess.on("close", (code) => {
-      if (code === 0) resolve(stdout);
-      else
+      if (code === 0) {
+        resolve({
+          stdout,
+          stderr,
+        });
+      } else {
         reject(
-          new Error(
-            `Command:\n  ${command} ${args
-              .map((arg) => `"${arg}"`)
-              .join(" ")}\n` + `failed with exit code ${code}`,
-          ),
+            new Error(
+                `Command:\n  ${command} ${args
+                    .map((arg) => `"${arg}"`)
+                    .join(" ")}\n` + `failed with exit code ${code}`,
+            ),
         );
+      }
     });
   });
-  return { promise, childProcess };
+  return {
+    promise,
+    childProcess,
+  };
 }
