@@ -22,7 +22,10 @@
   "license": "Apache-2.0",
   "author": "Squaredle LLC",
   "type": "module",
-  "exports": "./cert-builder.js",
+  "exports": {
+    ".": "./cert-builder.js",
+    "./cert-info.js": "./cert-info.js"
+  },
   "bin": {
     "local-ssl-certs": "index.js"
   },

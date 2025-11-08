@@ -10,17 +10,35 @@ program
   .description("Prints information about the given certificates")
   .argument("<certs...>", "Certificates to display information about")
   .action(async (certs) => {
+    // Queue all fetches in parallel, then await-print them in order.
     const promises = [];
     for (const cert of certs) {
-      const certInfo = new CertInfo(null, null, cert);
+      const certInfo = new CertInfo(cert, null);
       promises.push(certInfo.getDetails());
     }
-    // Output each certificate's details in order.
     for (let i = 0; i < promises.length; i++) {
       const details = await promises[i];
       console.log(`Certificate: ${certs[i]}`);
-      console.log(details);
+      console.log(details.stdout);
     }
+  });
+
+program
+  .command("validate <crt> <key>")
+  .description("Validates the given certificate and key pair")
+  .argument(
+    "[hostnames...]",
+    "Hostnames to verify exist in the SSL certificate",
+  )
+  .option("-v, --verbose", "Enable verbose output")
+  .action(async (crt, key, hostnames, options) => {
+    const certInfo = new CertInfo(crt, key);
+    await CertBuilder.validateSslCert(
+      certInfo,
+      hostnames,
+      !!options["verbose"],
+    );
+    console.log("Certificate validation successful.");
   });
 
 program

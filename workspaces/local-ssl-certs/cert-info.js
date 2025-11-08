@@ -3,9 +3,9 @@ import { spawnAsync } from "@squaredle/util/process-util";
 export class CertInfo {
   #x509 = null;
 
-  constructor(name, keyPath, certPath, password = null) {
-    this.keyPath = keyPath;
+  constructor(certPath, keyPath, password = null) {
     this.certPath = certPath;
+    this.keyPath = keyPath;
     this.password = password;
   }
 

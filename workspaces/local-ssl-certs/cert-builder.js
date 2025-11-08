@@ -164,6 +164,129 @@ export class CertBuilder {
     return builder;
   }
 
+  /**
+   * Validates that the given SSL cert is valid for the given hostnames.
+   * @param {CertInfo} certInfo
+   * @param {Array<string>} hostnames
+   * @param {boolean=} verbose
+   * @returns {Promise<void>}
+   */
+  static async validateSslCert(certInfo, hostnames, verbose = false) {
+    const log = verbose ? console.log.bind(console) : () => {};
+    log(`Validating SSL cert ${certInfo.certPath} for hostnames:`, hostnames);
+
+    const runOpenSSL = async (...args) => {
+      log(`% openssl ${args.join(" ")}`);
+      const command = spawnAsync("openssl", args, {
+        stdio: ["ignore", "pipe", "inherit"],
+      });
+      return command.promise;
+    };
+
+    // Basic validations:
+    await runOpenSSL(
+      "x509",
+      "-in",
+      certInfo.certPath,
+      "-noout",
+      "-checkend",
+      "0",
+    );
+    await runOpenSSL("rsa", "-in", certInfo.keyPath, "-noout", "-check");
+    await runOpenSSL(
+      "verify",
+      ...(verbose ? ["-verbose"] : []),
+      "-purpose",
+      "sslserver",
+      certInfo.certPath,
+    );
+
+    // Check expiration date.
+    const dateCommand = await runOpenSSL(
+      "x509",
+      "-enddate",
+      "-noout",
+      "-in",
+      certInfo.certPath,
+    );
+    const match = dateCommand.stdout.match(/notAfter=(.+)/);
+    if (match) {
+      const notAfter = new Date(match[1]);
+      const now = new Date();
+      if (now >= notAfter) {
+        throw new Error(`Certificate expired on ${notAfter.toUTCString()}`);
+      }
+      // 14 days
+      if (notAfter - now < 14 * 24 * 60 * 60 * 1000) {
+        console.warn(
+          `Warning: Certificate expires on ${notAfter.toUTCString()}`,
+        );
+      }
+      log(`Certificate valid until ${notAfter.toUTCString()}`);
+    } else {
+      throw new Error("Could not parse certificate expiration date.");
+    }
+
+    const subjCommand = await runOpenSSL(
+      "x509",
+      "-noout",
+      "-subject",
+      "-in",
+      certInfo.certPath,
+    );
+
+    const altNamesCommand = await runOpenSSL(
+      "x509",
+      "-noout",
+      "-ext",
+      "subjectAltName",
+      "-in",
+      certInfo.certPath,
+    );
+
+    const names = [];
+    const cnMatch = subjCommand.stdout.match(/subject=.*CN\s*=\s*([^/,\n]+)/);
+    if (!cnMatch) {
+      throw new Error("Could not find common name (CN) in certificate.");
+    }
+    names.push(cnMatch[1].trim());
+
+    const dnsMatches = altNamesCommand.stdout.matchAll(/DNS:([^,\n]+)/g);
+    names.push(...dnsMatches.map((match) => match[1].trim()));
+
+    log("Common name and subject alt names:", names);
+    const missingNames = hostnames.filter(
+      (hostname) => !names.includes(hostname),
+    );
+    if (missingNames.length > 0) {
+      throw new Error(
+        `Some hostnames not found in certificate: ${missingNames.join(", ")}`,
+      );
+    }
+
+    // Check that the private key matches the cert.
+    const keyCommand = await runOpenSSL(
+      "x509",
+      "-noout",
+      "-modulus",
+      "-in",
+      certInfo.certPath,
+    );
+    const modCert = keyCommand.stdout.trim();
+
+    const privKeyCommand = await runOpenSSL(
+      "rsa",
+      "-noout",
+      "-modulus",
+      "-in",
+      certInfo.keyPath,
+    );
+    const modKey = privKeyCommand.stdout.trim();
+    if (modCert !== modKey) {
+      throw new Error("Certificate and private key do not match.");
+    }
+  }
+
   /*
    * Creates the root CA key pair and self-signed cert.
    * The key, password, and cert are used to sign other certs.
@@ -178,9 +301,8 @@ export class CertBuilder {
     }
 
     const certInfo = new CertInfo(
-      certName,
-      privKeyPath,
       join(this.certDir, `${certName}.crt`),
+      privKeyPath,
     );
 
     if (this.options.safeMode) {
@@ -265,22 +387,18 @@ export class CertBuilder {
    * @param {CertInfo} issuer
    * @param {string|Array<string>=} hostnames The hostname(s), for SSL
    *     certificates. Leave null for intermediate CA certs.
-   * @return {CertInfo} Newly issued cert info.
+   * @return {?CertInfo} Newly issued cert info.
    */
   async issueSignedCert(name, issuer, hostnames = null) {
     const pathPrefix = join(this.certDir, name);
-    const certInfo = new CertInfo(
-      name,
-      `${pathPrefix}.key`,
-      `${pathPrefix}.crt`,
-    );
+    const certInfo = new CertInfo(`${pathPrefix}.crt`, `${pathPrefix}.key`);
 
     if (this.options.safeMode) {
       for (const path of [certInfo.keyPath, certInfo.certPath]) {
         if (fs.existsSync(path)) {
           if (!(await cli.confirm(`Overwrite existing file ${path}?`))) {
-            console.warn("Skipping cert issuance for existing cert:", name);
-            continue;
+            console.warn("Aborting.");
+            return null;
           }
         }
       }
@@ -407,7 +525,7 @@ export class CertBuilder {
    * @param {string|Array<string>} hostnames The hostname(s).
    * @param {CertInfo=} issuer The issuer cert info. If not provided, looks for
    *     the intermediate CA cert.
-   * @return {CertInfo} Newly issued cert info.
+   * @return {?CertInfo} Newly issued cert info.
    */
   async issueSslCert(hostnames, issuer = null) {
     if (typeof hostnames === "string") hostnames = [hostnames];
@@ -492,7 +610,7 @@ export class CertBuilder {
    * @return {Promise<?CertInfo>}
    */
   async #loadCertKeyPair(keyPath, certPath) {
-    const certInfo = new CertInfo("", keyPath, certPath);
+    const certInfo = new CertInfo(certPath, keyPath);
     return Promise.all([
       fs.promises.readFile(certInfo.keyPath, "utf-8"),
       fs.promises.readFile(certInfo.certPath, "utf-8"),
